@@ -113,7 +113,7 @@ Gemma 4는 자연어 명령 해석 및 상황 판단과 같은 high-level intell
 담당하도록 역할을 분리하였다.
 
 <p align="center">
-  <img src="images/gemma4_vision_inference.png" width="850">
+  <img src="gemma4_vision_inference.png" width="850">
 </p>
 
 <p align="center">

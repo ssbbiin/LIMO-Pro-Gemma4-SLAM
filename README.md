@@ -205,3 +205,59 @@ RTAB-Map은 기존 `/camera/depth/image_raw` 대신 마스킹된 Depth 토픽을
     </td>
   </tr>
 </table>
+
+## 9. Implementation Results
+
+본 프로젝트를 통해 LIMO Pro의 Jetson 환경에서
+멀티모달 AI 모델, 실시간 객체 인식, RGB-D 기반 로봇 제어 및
+SLAM을 하나의 ROS 2 기반 시스템으로 통합하였다.
+
+### Implemented Features
+
+| Module | Result |
+|---|---|
+| Gemma 4 E2B | Jetson 기반 Text / Vision inference 구현 |
+| YOLO11n | RGB Camera 기반 Person Detection 구현 |
+| TensorRT FP16 | YOLO11n 실시간 inference acceleration |
+| RGB-D Perception | 사람의 방향 및 거리 추정 |
+| Person Following | `/cmd_vel` 기반 LIMO Pro 실시간 사람 추종 |
+| Depth Masking | 사람 영역의 Depth 정보 제거 |
+| RTAB-Map | Masked Depth 기반 RGB-D 3D Mapping |
+
+### Key Results
+
+- YOLO11n의 ROS Camera inference latency를 **약 700–900 ms에서 10–17 ms** 수준으로 단축
+- TensorRT 기반 실시간 Person Detection 및 **30 Hz 로봇 제어** 구성
+- RGB-D Depth를 이용한 **1.0 m 목표 거리 기반 Person Following** 구현
+- 사람 영역을 제거한 `/camera/depth_masked/image_raw` 생성
+- Masked Depth를 RTAB-Map에 직접 입력하는 Dynamic Object-Aware SLAM pipeline 구성
+- Gemma 4 E2B를 Jetson에서 구동하여 실제 Image 기반 Vision inference 확인
+
+- ## 10. Challenges & Troubleshooting
+
+프로젝트를 진행하면서 실시간 AI inference, 제한된 computing resource,
+sensor configuration 및 SLAM parameter와 관련된 여러 문제를 확인하고 개선하였다.
+
+| Challenge | Cause / Analysis | Solution / Result |
+|---|---|---|
+| Slow YOLO Inference | PyTorch CPU 기반 inference에서 약 700–900 ms의 latency 발생 | YOLO11n을 TensorRT FP16 Engine으로 변환하여 약 10–17 ms 수준으로 단축 |
+| Unstable Person Following | 낮은 detection rate로 인해 오래된 detection 결과를 기반으로 제어 | TensorRT 적용 및 30 Hz control loop를 구성하여 연속적인 robot control 구현 |
+| Gemma 4 + TensorRT Memory Limitation | Jetson의 unified memory 환경에서 Gemma 4와 TensorRT 동시 실행 시 memory 부족 발생 | llama-server의 memory usage와 TensorRT GPU allocation을 확인하여 OOM 원인 분석 |
+| RGB-D Camera TF Mismatch | 실제 Camera가 약 12.5° 위쪽을 향하고 있었으나 TF와 실제 장착 각도 불일치 | Camera pitch를 TF에 반영하여 실제 sensor orientation과 coordinate frame을 보정 |
+| RTAB-Map Grid Artifacts | 실내 Mapping 과정에서 Occupancy Grid에 반복적인 stripe artifact 발생 | Camera TF 및 RTAB-Map Grid parameter를 변경하며 원인 분석 |
+
+## 11. Future Work
+
+현재 시스템에서는 YOLO11 + TensorRT 기반의 실시간 perception 및
+Person Following과 Dynamic Object-Aware SLAM을 구현하였으며,
+Gemma 4 E2B의 multimodal inference 환경을 구성하였다.
+
+향후에는 각 모듈을 하나의 통합된 intelligent mobile robot system으로 확장하고자 한다.
+
+- Gemma 4 E2B와 TensorRT perception pipeline의 동시 실행을 위한 memory optimization
+- 자연어 명령을 이용한 `FOLLOW`, `STOP`, `GO_TO` 등의 high-level behavior control
+- Gemma 4의 visual understanding과 robot state를 결합한 situation-aware decision making
+- RTAB-Map 및 Nav2와 high-level AI decision module 연동
+- Person target loss 및 re-identification 처리 개선
+- 위치 및 장소 정보를 활용한 semantic memory 구성
+- Dynamic Object Masking 적용 전/후 SLAM 성능의 정량적 비교

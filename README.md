@@ -172,5 +172,31 @@ TensorRT 기반 실시간 Person Detection과 30 Hz 제어 주기를 적용하�
 
 https://github.com/user-attachments/assets/cfd98685-cb34-494b-a372-c80bf2875553
 
+## 8. Dynamic Object-Aware SLAM
 
+일반적인 RGB-D SLAM에서는 사람과 같은 동적 객체의 Depth 정보가
+Point Cloud 및 지도 생성 과정에 포함되어 Mapping 결과에 영향을 줄 수 있다.
+
+이를 줄이기 위해 사람으로 검출된 영역의 Depth 값을 제거한 뒤,
+마스킹된 Depth 영상을 RTAB-Map의 입력으로 사용하는
+Dynamic Object-Aware SLAM 파이프라인을 구성하였다.
+
+### Person Depth Masking
+
+RGB 영상에서 검출된 사람의 영역을 기준으로 해당 위치의 Depth 값을 제거하였다.
+
+기존 Depth 영상 `/camera/depth/image_raw`을 입력으로 사용하고,
+사람 영역이 제거된 Depth 영상을 별도의 토픽으로 발행하여
+RTAB-Map이 동적 객체의 Depth 정보를 Mapping에 사용하지 않도록 구성하였다.
+
+### Processing Pipeline
+
+`RGB-D Camera` → `Person Detection` → `Person Depth Masking` → `Masked Depth` → `RTAB-Map` → `3D Map`
+<p align="center">
+  <img src="person_depth_mask_node.png" width="750">
+</p>
+
+<p align="center">
+  <em>Person depth masking node using TensorRT-based person detection</em>
+</p>
 

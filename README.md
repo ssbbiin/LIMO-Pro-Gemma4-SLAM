@@ -169,4 +169,8 @@ TensorRT 기반 실시간 Person Detection과 30 Hz 제어 주기를 적용하�
 
 ▶️ **Person Following Demo Video**
 
-[person_following_demo.mp4](./person_following_demo.mp4)
+
+https://github.com/user-attachments/assets/cfd98685-cb34-494b-a372-c80bf2875553
+
+
+

@@ -63,7 +63,7 @@ RGB-D Camera
 → RTAB-Map  
 → 3D Map / Occupancy Grid
 
-### AI
+### High-Level AI — Planned Integration
 
 RGB Camera / Robot State  
 → Gemma 4 E2B  
@@ -209,8 +209,12 @@ RTAB-Map은 기존 `/camera/depth/image_raw` 대신 마스킹된 Depth 토픽을
 ## 9. Implementation Results
 
 본 프로젝트를 통해 LIMO Pro의 Jetson 환경에서
-멀티모달 AI 모델, 실시간 객체 인식, RGB-D 기반 로봇 제어 및
-SLAM을 하나의 ROS 2 기반 시스템으로 통합하였다.
+Gemma 4 기반 multimodal inference, YOLO11/TensorRT 기반 실시간 perception,
+RGB-D Person Following 및 Dynamic Object-Aware SLAM 모듈을 구현하고
+ROS 2 기반 통합 구조를 구성하였다.
+
+다만 Gemma 4와 TensorRT perception을 동시에 상시 구동하는 과정에서는
+Jetson의 unified memory 한계로 인해 추가적인 memory optimization이 필요함을 확인하였다.
 
 ### Implemented Features
 

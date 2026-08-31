@@ -177,26 +177,31 @@ https://github.com/user-attachments/assets/cfd98685-cb34-494b-a372-c80bf2875553
 일반적인 RGB-D SLAM에서는 사람과 같은 동적 객체의 Depth 정보가
 Point Cloud 및 지도 생성 과정에 포함되어 Mapping 결과에 영향을 줄 수 있다.
 
-이를 줄이기 위해 사람으로 검출된 영역의 Depth 값을 제거한 뒤,
+이를 줄이기 위해 RGB 영상에서 검출된 사람 영역의 Depth 값을 제거하고,
 마스킹된 Depth 영상을 RTAB-Map의 입력으로 사용하는
 Dynamic Object-Aware SLAM 파이프라인을 구성하였다.
 
-### Person Depth Masking
+### Person Depth Masking & RTAB-Map Integration
 
-RGB 영상에서 검출된 사람의 영역을 기준으로 해당 위치의 Depth 값을 제거하였다.
+RGB 영상에서 사람을 검출한 뒤 해당 영역에 대응되는 Depth 값을 제거하고,
+마스킹된 Depth 영상을 `/camera/depth_masked/image_raw` 토픽으로 발행하였다.
 
-기존 Depth 영상 `/camera/depth/image_raw`을 입력으로 사용하고,
-사람 영역이 제거된 Depth 영상을 별도의 토픽으로 발행하여
-RTAB-Map이 동적 객체의 Depth 정보를 Mapping에 사용하지 않도록 구성하였다.
+RTAB-Map은 기존 `/camera/depth/image_raw` 대신 마스킹된 Depth 토픽을 입력으로 사용하여
+사람과 같은 동적 객체의 Depth 정보가 3D Mapping에 반영되는 영향을 줄이도록 구성하였다.
 
 ### Processing Pipeline
 
-`RGB-D Camera` → `Person Detection` → `Person Depth Masking` → `Masked Depth` → `RTAB-Map` → `3D Map`
-<p align="center">
-  <img src="person_depth_mask_node.png" width="750">
-</p>
+`RGB-D Camera` → `Person Detection` → `Depth Masking` → `/camera/depth_masked/image_raw` → `RTAB-Map` → `3D Map`
 
-<p align="center">
-  <em>Person depth masking node using TensorRT-based person detection</em>
-</p>
-
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="person_depth_mask_node.png" width="100%"><br>
+      <b>Person Depth Masking Node</b>
+    </td>
+    <td align="center" width="50%">
+      <img src="dynamic_slam_rtabmap.png" width="100%"><br>
+      <b>RTAB-Map with Masked Depth Input</b>
+    </td>
+  </tr>
+</table>

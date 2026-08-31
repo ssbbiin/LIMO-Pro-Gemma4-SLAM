@@ -141,3 +141,32 @@ Jetson GPU 기반 inference pipeline을 구성하였다.
 
 TensorRT 적용을 통해 inference latency를 크게 감소시켰으며,
 실제 RGB Camera 입력 속도에 맞춰 실시간 Person Detection이 가능하도록 개선하였다.
+
+## 7. RGB-D Person Following
+
+YOLO11을 통해 검출된 사람의 영상 내 위치와
+RGB-D Camera의 Depth 정보를 결합하여 대상의 방향과 거리를 추정하였다.
+
+사람의 Bounding Box 중심과 영상 중심 사이의 오차를 이용하여
+좌우 방향을 판단하고, Depth 정보를 이용하여 로봇과 사람 사이의 거리를 계산하였다.
+
+계산된 방향 및 거리 오차를 기반으로
+ROS 2 `geometry_msgs/msg/Twist`의 `angular.z`와 `linear.x`를 생성하고,
+`/cmd_vel`을 통해 LIMO Pro를 제어하였다.
+
+### Control Pipeline
+
+`Person Detection` → `RGB-D Distance Estimation` → `Direction & Distance Error` → `Velocity Command` → `/cmd_vel` → `LIMO Pro`
+
+목표 거리는 **1.0 m**로 설정하였으며,
+TensorRT 기반 실시간 Person Detection과 30 Hz 제어 주기를 적용하여
+사람의 이동에 따라 LIMO Pro가 연속적으로 추종하도록 구성하였다.
+
+### Person Following Demo
+
+실제 실내 환경에서 사용자가 이동함에 따라 LIMO Pro가
+대상의 방향과 거리를 추정하며 주행하는 모습을 확인하였다.
+
+▶️ **Person Following Demo Video**
+
+[person_following_demo.mp4](./person_following_demo.mp4)

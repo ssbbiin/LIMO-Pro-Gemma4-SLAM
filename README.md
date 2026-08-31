@@ -119,3 +119,25 @@ Gemma 4는 자연어 명령 해석 및 상황 판단과 같은 high-level intell
 <p align="center">
   <em>Gemma 4 E2B multimodal vision inference on the LIMO Pro Jetson platform</em>
 </p>
+
+## 6. YOLO11 + TensorRT Person Detection
+
+실시간 Person Following을 위해 YOLO11n을 이용하여
+RGB Camera 영상에서 사람을 검출하였다.
+
+초기 PyTorch 기반 YOLO11n에서는 실제 ROS 2 Camera 입력 처리 시
+약 700–900 ms의 inference latency가 발생하여
+실시간 로봇 제어에 한계가 있었다.
+
+이를 개선하기 위해 YOLO11n 모델을 TensorRT FP16 Engine으로 변환하고,
+Jetson GPU 기반 inference pipeline을 구성하였다.
+
+### Inference Performance
+
+| Method | Inference Latency | Processing Rate |
+|---|---:|---:|
+| PyTorch CPU | 700–900 ms | 1.1–1.4 FPS |
+| TensorRT FP16 | 10–17 ms | 60–100 FPS |
+
+TensorRT 적용을 통해 inference latency를 크게 감소시켰으며,
+실제 RGB Camera 입력 속도에 맞춰 실시간 Person Detection이 가능하도록 개선하였다.

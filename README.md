@@ -1,36 +1,121 @@
-# LIMO Pro Gemma 4-based Dynamic Object-Aware SLAM
+# LIMO Pro Gemma 4-based Intelligent Mobile Robot
 
-> Gemma 4 기반 동적 객체 인식 및 Depth Masking을 적용한  
-> LIMO Pro RGB-D SLAM 프로젝트
+**Gemma 4 E2B · YOLO11 · TensorRT · RGB-D Person Following · Dynamic Object-Aware SLAM**
 
-## Project Overview
+LIMO Pro mobile robot project integrating multimodal AI, real-time person perception,
+RGB-D based person following, and dynamic-object-aware RTAB-Map SLAM.
 
-실내 환경에서 RGB-D SLAM을 수행할 때 사람과 같은 동적 객체가 카메라에 포함되면,
-해당 객체의 Depth 정보가 지도 생성에 반영되어 실제 환경에는 존재하지 않는
-장애물이나 흔적이 지도에 남을 수 있다.
+## 1. Project Overview
 
-본 프로젝트에서는 LIMO Pro 모바일 로봇의 RGB-D 카메라와 Gemma 4를 활용하여
-사람을 동적 객체로 인식하고, 해당 영역의 Depth 정보를 제거한 뒤
-RTAB-Map에 입력하는 Dynamic Object-Aware SLAM 파이프라인을 구성하였다.
+본 프로젝트에서는 LIMO Pro 모바일 로봇에 Gemma 4 E2B,
+YOLO11, TensorRT 및 RGB-D Camera를 통합하여
+사람 인식·추종과 동적 객체를 고려한 SLAM 시스템을 구현하였다.
 
-또한 Gemma 4를 통해 검출한 사람의 위치와 RGB-D Camera의 Depth 정보를 활용하여
-대상과의 거리 및 방향을 추정하고, 이를 기반으로 LIMO Pro가 사람을 따라 이동하는
-Person Following 기능을 구현하였다.
+실시간 사람 인식은 YOLO11을 이용하여 수행하고,
+TensorRT FP16 기반으로 추론을 가속하여 모바일 로봇에서
+실시간으로 동작할 수 있도록 구성하였다.
 
-이를 통해 동적 객체가 포함된 실내 환경에서 사람의 Depth 정보가
-SLAM 및 Occupancy Grid 생성에 미치는 영향을 확인하고,
-동적 객체 제거를 적용한 Mapping 환경을 구현하는 것을 목표로 하였다.
+검출된 사람의 영상 내 위치와 RGB-D Camera의 Depth 정보를 결합하여
+사람과의 거리 및 방향을 추정하고, 이를 ROS 2 `/cmd_vel` 명령으로 변환하여
+LIMO Pro가 사람을 따라가는 Person Following 기능을 구현하였다.
 
-## System Pipeline
+또한 검출된 사람 영역의 Depth 정보를 제거한 Masked Depth Image를 생성하고,
+이를 RTAB-Map의 입력으로 사용하여 이동하는 사람이 지도에 정적 장애물로
+누적되는 영향을 줄이는 Dynamic Object-Aware SLAM 파이프라인을 구성하였다.
+
+Gemma 4 E2B는 실시간 제어를 직접 수행하는 대신,
+자연어 명령 해석 및 상황 판단과 같은 상위 수준의
+로봇 의사결정 모듈로 활용하는 구조를 설계하였다.
+
+## 2. Project Objectives
+
+본 프로젝트의 주요 목표는 다음과 같다.
+
+- Jetson 환경에서 Gemma 4 E2B 멀티모달 모델 구동
+- ROS 2 RGB-D Camera와 AI perception pipeline 연동
+- YOLO11 기반 실시간 사람 검출
+- TensorRT FP16을 이용한 inference acceleration
+- RGB-D Depth 기반 사람 거리 및 방향 추정
+- `/cmd_vel` 기반 LIMO Pro Person Following 구현
+- 사람 영역의 Depth 정보를 제거하는 Dynamic Object Masking 구현
+- Masked Depth와 RTAB-Map을 연동한 Dynamic Object-Aware SLAM 구성
+
+## 3. System Architecture
+
+본 시스템은 실시간 인지 및 제어 계층과
+상위 수준 AI 판단 계층으로 구성하였다.
+
+### Real-Time Perception & Control
 
 RGB-D Camera  
-↓  
-Gemma 4 Person Detection  
-↓  
-Person Mask Generation  
-↓  
-Depth Masking  
-↓  
-RTAB-Map RGB-D SLAM  
-↓  
-Dynamic Object-Filtered Map
+→ YOLO11 + TensorRT Person Detection  
+→ Person Position / Depth Estimation  
+→ Person Following Controller  
+→ `/cmd_vel`  
+→ LIMO Pro
+
+### Dynamic Object-Aware SLAM
+
+RGB-D Camera  
+→ Person Detection  
+→ Person Depth Masking  
+→ `/camera/depth_masked/image_raw`  
+→ RTAB-Map  
+→ 3D Map / Occupancy Grid
+
+### AI
+
+RGB Camera / Robot State  
+→ Gemma 4 E2B  
+→ Natural Language Understanding / High-Level Decision  
+→ Robot Behavior
+
+실시간성이 요구되는 사람 검출 및 추종은 YOLO11과 TensorRT가 담당하고,
+Gemma 4 E2B는 자연어 명령 해석과 상황 판단 등 상대적으로
+낮은 주기의 상위 수준 의사결정을 담당하도록 역할을 분리하였다.
+
+이를 통해 대규모 멀티모달 모델이 매 프레임의 저수준 제어를 직접 수행하지 않으면서도,
+실시간 perception pipeline과 AI 판단을 하나의 모바일 로봇 시스템에
+통합할 수 있도록 설계하였다.
+
+## 4. Hardware & Software
+
+| Category | Hardware / Software | Role |
+|---|---|---|
+| Mobile Robot | LIMO Pro | Mobile robot platform |
+| Computing Platform | NVIDIA Jetson Orin | On-board AI inference and ROS 2 processing |
+| RGB-D Camera | Orbbec RGB-D Camera | RGB image and depth acquisition |
+| OS | Ubuntu 22.04 | Development environment |
+| Middleware | ROS 2 Humble | Robot communication and system integration |
+| Vision-Language Model | Gemma 4 E2B | Vision inference and high-level decision making |
+| LLM Runtime | llama.cpp | Gemma 4 local inference |
+| Object Detection | YOLO11n | Real-time person detection |
+| Inference Acceleration | TensorRT FP16 | YOLO11 inference acceleration |
+| SLAM | RTAB-Map | RGB-D based mapping |
+| Navigation | Nav2 | Navigation framework |
+| Computer Vision | OpenCV | Image processing |
+| Programming | Python | ROS 2 nodes and perception pipeline implementation |
+
+## 5. Gemma 4 E2B Integration
+
+LIMO Pro의 Jetson 환경에서 멀티모달 모델을 직접 구동하기 위해
+Gemma 4 E2B의 GGUF 모델과 llama.cpp 기반 로컬 inference 환경을 구성하였다.
+
+llama.cpp를 CUDA 환경에서 빌드하고 Gemma 4 E2B Q4_0 모델과
+multimodal projector를 적용하여 Text뿐만 아니라 Image 입력을 처리할 수 있도록 구성하였다.
+
+실제 Camera Image를 Gemma 4에 입력하여 이미지 내 상황을 분석하는
+Vision inference를 수행하였으며, 이를 통해 로봇의 시각 정보를
+상위 수준의 상황 판단에 활용할 수 있는 환경을 구축하였다.
+
+실시간 사람 검출 및 로봇 제어는 YOLO11과 TensorRT 기반 perception pipeline이 담당하고,
+Gemma 4는 자연어 명령 해석 및 상황 판단과 같은 high-level intelligence를
+담당하도록 역할을 분리하였다.
+
+<p align="center">
+  <img src="images/gemma4_vision_inference.png" width="850">
+</p>
+
+<p align="center">
+  <em>Gemma 4 E2B multimodal vision inference on the LIMO Pro Jetson platform</em>
+</p>
